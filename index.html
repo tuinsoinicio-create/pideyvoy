@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Super Cerca - Supermercado Online</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary: #27ae60;
+            --primary-dark: #219653;
+            --primary-light: #6FCF97;
+            --secondary: #f5f5f5;
+            --text: #333333;
+            --text-light: #757575;
+            --success: #27ae60;
+            --warning: #F2994A;
+            --background: #ffffff;
+            --card-shadow: 0 4px 12px rgba(39, 174, 96, 0.15);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background-color: #f9f9f9;
+            color: var(--text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            max-width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 0 1rem;
+        }
+
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 1rem 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        nav a {
+            padding: 0.75rem 1rem;
+            border-radius: 9999px;
+            transition: background-color 0.2s;
+        }
+
+        nav a.active {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .search-container {
+            position: relative;
+        }
+
+        .search-container input {
+            padding-left: 2.5rem;
+            border-radius: 9999px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .search-container input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .search-container .fa-search {
+            left: 1rem;
+        }
+
+        .category-item {
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .category-item:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--card-shadow);
+        }
+
+        .product-card {
+            background-color: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .product-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 16px rgba(39, 174, 96, 0.2);
+        }
+
+        .product-card img {
+            object-fit: cover;
+            height: 150px;
+        }
+        
+        .quantity-control button {
+            transition: background-color 0.2s;
+        }
+
+        .quantity-control button:hover {
+            background-color: var(--primary-light);
+        }
+
+        #cart-sidebar {
+            background-color: white;
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 100%;
+            max-width: 400px;
+            height: 100%;
+            transform: translateX(100%);
+            transition: transform 0.3s ease-in-out;
+            box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
+            z-index: 2000;
+        }
+
+        #cart-sidebar.open {
+            transform: translateX(0);
+        }
+
+        .cart-item {
+            border-bottom: 1px solid #eee;
+        }
+
+        .cart-item:last-child {
+            border-bottom: none;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 12px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 500px;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-box {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--success);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 9999px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 5000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s;
+        }
+
+        .message-box.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .subcategory-tabs {
+            background-color: #e8f5e9;
+            display: flex;
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            padding: 0.5rem 0;
+        }
+        
+        .subcategory-tab {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 9999px;
+            transition: background-color 0.2s, color 0.2s;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+        
+        .subcategory-tab.active {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 600;
+        }
+        
+        /* Ocultar scrollbar en algunos navegadores */
+        .subcategory-tabs::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .subcategory-tabs {
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-inter">
+
+    <!-- Header -->
+    <header class="bg-primary text-white p-4 shadow-md sticky top-0 z-10">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">Super Cerca</h1>
+            <div class="relative flex-grow mx-4 max-w-xl">
+                <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-300"></i>
+                <input type="text" id="search-input" placeholder="Buscar productos..." class="w-full py-2 px-10 rounded-full bg-white bg-opacity-20 text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-white">
+            </div>
+            <button id="cart-button" class="bg-white text-primary rounded-full w-10 h-10 flex items-center justify-center relative shadow-lg transition transform hover:scale-105">
+                <i class="fas fa-shopping-cart"></i>
+                <span id="cart-count" class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full transform translate-x-1/2 -translate-y-1/2">0</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Categories -->
+    <nav class="bg-white shadow-sm py-4 mb-4 sticky top-[72px] z-10">
+        <div class="container mx-auto flex justify-around overflow-x-auto whitespace-nowrap">
+            <a href="#" class="category-link flex flex-col items-center p-2 text-gray-600 hover:text-primary transition duration-300" data-category="carnes">
+                <i class="fas fa-drumstick-bite text-xl mb-1"></i>
+                <span class="text-xs font-semibold">Carnes</span>
+            </a>
+            <a href="#" class="category-link flex flex-col items-center p-2 text-gray-600 hover:text-primary transition duration-300" data-category="bebestibles">
+                <i class="fas fa-glass-cheers text-xl mb-1"></i>
+                <span class="text-xs font-semibold">Bebestibles</span>
+            </a>
+            <a href="#" class="category-link flex flex-col items-center p-2 text-gray-600 hover:text-primary transition duration-300" data-category="no-perecibles">
+                <i class="fas fa-box-open text-xl mb-1"></i>
+                <span class="text-xs font-semibold">No Perecibles</span>
+            </a>
+            <a href="#" class="category-link flex flex-col items-center p-2 text-gray-600 hover:text-primary transition duration-300" data-category="frutas-verduras">
+                <i class="fas fa-apple-alt text-xl mb-1"></i>
+                <span class="text-xs font-semibold">Frutas y Verduras</span>
+            </a>
+            <a href="#" class="category-link flex flex-col items-center p-2 text-gray-600 hover:text-primary transition duration-300" data-category="panaderia">
+                <i class="fas fa-bread-slice text-xl mb-1"></i>
+                <span class="text-xs font-semibold">Panadería</span>
+            </a>
+            <a href="#" class="category-link flex flex-col items-center p-2 text-gray-600 hover:text-primary transition duration-300" data-category="lacteos">
+                <i class="fas fa-cheese text-xl mb-1"></i>
+                <span class="text-xs font-semibold">Lácteos</span>
+            </a>
+        </div>
+    </nav>
+    
+    <!-- Subcategory Tabs -->
+    <div id="subcategory-tabs-container" class="bg-gray-200 py-2 hidden sticky top-[148px] z-10">
+        <div class="container mx-auto subcategory-tabs">
+        </div>
+    </div>
+
+    <!-- Product Grid -->
+    <main class="container mx-auto py-6">
+        <div id="product-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <!-- Product cards will be inserted here by JavaScript -->
+        </div>
+    </main>
+
+    <!-- Cart Sidebar -->
+    <aside id="cart-sidebar" class="bg-white p-4 flex flex-col">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-gray-800">Tu Carrito</h2>
+            <button id="close-cart" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+        </div>
+        <div id="cart-items" class="flex-grow overflow-y-auto">
+            <!-- Cart items will be inserted here by JavaScript -->
+        </div>
+        <div id="cart-summary" class="mt-4 pt-4 border-t border-gray-200">
+            <div class="flex justify-between font-semibold text-lg mb-2">
+                <span>Total:</span>
+                <span id="cart-total">$0</span>
+            </div>
+            <button id="checkout-button" class="w-full bg-primary text-white py-3 rounded-lg font-bold text-lg hover:bg-primary-dark transition-colors">
+                <i class="fab fa-whatsapp mr-2"></i> Pedir por WhatsApp
+            </button>
+        </div>
+    </aside>
+
+    <!-- Modal for contact form -->
+    <div id="modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Datos del Pedido</h3>
+                <button id="close-modal" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            </div>
+            <form id="contact-form" class="space-y-4">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Nombre</label>
+                    <input type="text" id="name" name="name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 p-2">
+                </div>
+                <div>
+                    <label for="phone" class="block text-sm font-medium text-gray-700">Teléfono</label>
+                    <input type="tel" id="phone" name="phone" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 p-2">
+                </div>
+                <div>
+                    <label for="address" class="block text-sm font-medium text-gray-700">Dirección</label>
+                    <textarea id="address" name="address" rows="3" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 p-2"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-primary text-white py-2 rounded-md font-bold hover:bg-primary-dark transition-colors">Enviar por WhatsApp</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Message Box -->
+    <div id="message-box" class="message-box"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // Sample product data with new subcategory, description, and image properties
+            const products = [
+                { id: 1, name: 'Filete Vacuno', description: 'Corte magro y tierno, ideal para asados y preparaciones especiales.', category: 'carnes', subcategory: 'vacuno', price: 15990, byWeight: true, unit: 'kg', image: 'https://placehold.co/400x300/27ae60/white?text=Filete+Vacuno' },
+                { id: 2, name: 'Lomo de Cerdo', description: 'Jugoza carne de cerdo, perfecta para la parrilla o al horno.', category: 'carnes', subcategory: 'cerdo', price: 7990, byWeight: true, unit: 'kg', image: 'https://placehold.co/400x300/27ae60/white?text=Lomo+de+Cerdo' },
+                { id: 3, name: 'Pechuga de Pollo', description: 'Fuente de proteína magra, versátil para cualquier receta.', category: 'carnes', subcategory: 'pollo', price: 6590, byWeight: true, unit: 'kg', image: 'https://placehold.co/400x300/27ae60/white?text=Pechuga+Pollo' },
+                { id: 4, name: 'Tutitos de Pollo', description: 'Parte jugosa del pollo, ideal para freír o asar.', category: 'carnes', subcategory: 'pollo', price: 4990, byWeight: true, unit: 'kg', image: 'https://placehold.co/400x300/27ae60/white?text=Tutitos+Pollo' },
+                { id: 5, name: 'Bebida Coca-Cola', description: 'Refrescante bebida de sabor inconfundible.', category: 'bebestibles', subcategory: 'bebidas', price: 2500, byWeight: false, unit: 'unidad', image: 'https://placehold.co/400x300/27ae60/white?text=Coca-Cola' },
+                { id: 6, name: 'Agua Mineral con gas', description: 'Agua pura con burbujas, ideal para hidratarse.', category: 'bebestibles', subcategory: 'aguas', price: 1000, byWeight: false, unit: 'unidad', image: 'https://placehold.co/400x300/27ae60/white?text=Agua+con+gas' },
+                { id: 7, name: 'Vino Tinto Merlot', description: 'Vino suave y afrutado, perfecto para acompañar carnes.', category: 'bebestibles', subcategory: 'vinos', price: 8990, byWeight: false, unit: 'unidad', image: 'https://placehold.co/400x300/27ae60/white?text=Vino+Merlot' },
+                { id: 8, name: 'Cerveza Corona', description: 'Cerveza lager ligera y refrescante, ideal para un día caluroso.', category: 'bebestibles', subcategory: 'cervezas', price: 1800, byWeight: false, unit: 'unidad', image: 'https://placehold.co/400x300/27ae60/white?text=Cerveza+Corona' },
+                { id: 9, name: 'Ron Havana Club', description: 'Ron cubano añejo, perfecto para cócteles.', category: 'bebestibles', subcategory: 'destilados', price: 12990, byWeight: false, unit: 'unidad', image: 'https://placehold.co/400x300/27ae60/white?text=Ron+Havana' },
+                { id: 10, name: 'Arroz Grano Largo', description: 'Arroz de alta calidad, base perfecta para tus comidas.', category: 'no-perecibles', subcategory: 'graneles', price: 1200, byWeight: false, unit: 'unidad', image: 'https://placehold.co/400x300/27ae60/white?text=Arroz' },
+                { id: 11, name: 'Salsa de Tomate', description: 'Salsa casera lista para usar, ideal para pastas y pizzas.', category: 'no-perecibles', subcategory: 'conservas', price: 800, byWeight: false, unit: 'unidad', image: 'https://placehold.co/400x300/27ae60/white?text=Salsa+Tomate' },
+                { id: 12, name: 'Aceite de Oliva', description: 'Aceite extra virgen, esencial para una dieta saludable.', category: 'no-perecibles', subcategory: 'aceites', price: 4500, byWeight: false, unit: 'unidad', image: 'https://placehold.co/400x300/27ae60/white?text=Aceite+Oliva' },
+                { id: 13, name: 'Manzanas', description: 'Manzanas frescas y crujientes, ricas en fibra.', category: 'frutas-verduras', subcategory: 'frutas', price: 1800, byWeight: true, unit: 'kg', image: 'https://placehold.co/400x300/27ae60/white?text=Manzanas' },
+                { id: 14, name: 'Lechuga', description: 'Hojas frescas para ensaladas o sandwiches.', category: 'frutas-verduras', subcategory: 'verduras', price: 900, byWeight: false, unit: 'unidad', image: 'https://placehold.co/400x300/27ae60/white?text=Lechuga' },
+                { id: 15, name: 'Pan de Molde', description: 'Pan suave y esponjoso, ideal para el desayuno.', category: 'panaderia', subcategory: 'panes', price: 1500, byWeight: false, unit: 'unidad', image: 'https://placehold.co/400x300/27ae60/white?text=Pan+Molde' },
+                { id: 16, name: 'Leche Descremada', description: 'Leche ligera, perfecta para cuidar tu figura.', category: 'lacteos', subcategory: 'leches', price: 1100, byWeight: false, unit: 'unidad', image: 'https://placehold.co/400x300/27ae60/white?text=Leche' },
+            ];
+
+            const subcategories = {
+                'carnes': ['vacuno', 'cerdo', 'pollo'],
+                'bebestibles': ['aguas', 'bebidas', 'vinos', 'cervezas', 'destilados'],
+                'no-perecibles': ['graneles', 'conservas', 'aceites'],
+                'frutas-verduras': ['frutas', 'verduras'],
+                'panaderia': ['panes'],
+                'lacteos': ['leches']
+            };
+
+            // HTML Elements
+            const productList = document.getElementById('product-list');
+            const cartButton = document.getElementById('cart-button');
+            const cartSidebar = document.getElementById('cart-sidebar');
+            const closeCartButton = document.getElementById('close-cart');
+            const cartItemsContainer = document.getElementById('cart-items');
+            const cartCountSpan = document.getElementById('cart-count');
+            const cartTotalSpan = document.getElementById('cart-total');
+            const checkoutButton = document.getElementById('checkout-button');
+            const modal = document.getElementById('modal');
+            const closeModalButton = document.getElementById('close-modal');
+            const contactForm = document.getElementById('contact-form');
+            const messageBox = document.getElementById('message-box');
+            const searchInput = document.getElementById('search-input');
+            const categoryLinks = document.querySelectorAll('.category-link');
+            const subcategoryTabsContainer = document.getElementById('subcategory-tabs-container');
+            const subcategoryTabs = subcategoryTabsContainer.querySelector('.subcategory-tabs');
+            
+            let cart = [];
+            const whatsappNumber = '+56985418832';
+
+            // Helper functions
+            const formatPrice = (price) => {
+                return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(price);
+            };
+
+            const formatWeight = (weight) => {
+                return `${(weight * 1000).toLocaleString('es-CL')} gr`;
+            };
+
+            const showMessage = (message, type = 'success') => {
+                messageBox.textContent = message;
+                messageBox.className = `message-box show bg-${type === 'success' ? 'success' : 'warning'}`;
+                setTimeout(() => {
+                    messageBox.className = 'message-box';
+                }, 3000);
+            };
+
+            const findProductById = (id) => products.find(p => p.id === id);
+
+            // Render functions
+            const renderProducts = (filteredProducts) => {
+                productList.innerHTML = '';
+                if (filteredProducts.length === 0) {
+                    productList.innerHTML = '<p class="text-center text-gray-500 col-span-full">No se encontraron productos.</p>';
+                    return;
+                }
+                filteredProducts.forEach(product => {
+                    const productCard = document.createElement('div');
+                    productCard.className = 'product-card flex flex-col items-center p-4';
+                    
+                    const priceDisplay = product.byWeight ? `${formatPrice(product.price)} / ${product.unit}` : formatPrice(product.price);
+                    
+                    productCard.innerHTML = `
+                        <img src="${product.image}" alt="${product.name}" class="w-full h-36 rounded-md mb-2">
+                        <div class="flex-grow flex flex-col justify-between items-center text-center w-full">
+                            <h3 class="text-sm sm:text-base font-semibold text-gray-800 mb-1">${product.name}</h3>
+                            <p class="text-xs text-gray-600 mb-2">${product.description}</p>
+                            <p class="text-xs sm:text-sm text-primary-dark font-bold mb-2">${priceDisplay}</p>
+                            <button class="add-to-cart-btn w-full bg-primary text-white py-2 rounded-lg font-bold text-xs sm:text-sm hover:bg-primary-dark transition-colors" data-id="${product.id}">
+                                Agregar <i class="fas fa-plus ml-1"></i>
+                            </button>
+                        </div>
+                    `;
+                    productList.appendChild(productCard);
+                });
+            };
+
+            const updateCart = () => {
+                cartItemsContainer.innerHTML = '';
+                let total = 0;
+                let itemCount = 0;
+
+                if (cart.length === 0) {
+                    cartItemsContainer.innerHTML = '<p class="text-center text-gray-500 mt-8">El carrito está vacío.</p>';
+                } else {
+                    cart.forEach(item => {
+                        const product = findProductById(item.id);
+                        const itemTotal = item.byWeight ? item.quantity * item.weight * product.price : item.quantity * product.price;
+                        total += itemTotal;
+                        itemCount += item.quantity;
+
+                        const itemElement = document.createElement('div');
+                        itemElement.className = 'cart-item flex items-center p-3 hover:bg-gray-50 transition-colors';
+                        itemElement.innerHTML = `
+                            <img src="${product.image}" alt="${product.name}" class="w-16 h-16 rounded-md object-cover mr-3">
+                            <div class="flex-grow">
+                                <h4 class="text-sm font-semibold text-gray-800">${product.name}</h4>
+                                <p class="text-xs text-gray-500">${item.byWeight ? `Cantidad: ${formatWeight(item.weight)} x ${item.quantity}` : `Cantidad: ${item.quantity}`}</p>
+                                <p class="text-sm text-primary-dark font-bold">${formatPrice(itemTotal)}</p>
+                            </div>
+                            <button class="remove-from-cart-btn text-red-500 text-lg hover:text-red-700" data-id="${item.id}">&times;</button>
+                        `;
+                        cartItemsContainer.appendChild(itemElement);
+                    });
+                }
+
+                cartCountSpan.textContent = itemCount;
+                cartTotalSpan.textContent = formatPrice(total);
+                saveCartToStorage();
+            };
+
+            const renderSubcategories = (category) => {
+                const subcats = subcategories[category];
+                subcategoryTabs.innerHTML = '';
+                if (subcats) {
+                    subcategoryTabsContainer.classList.remove('hidden');
+                    subcats.forEach(subcat => {
+                        const tab = document.createElement('div');
+                        tab.className = 'subcategory-tab text-sm sm:text-base capitalize';
+                        tab.textContent = subcat;
+                        tab.dataset.subcat = subcat;
+                        subcategoryTabs.appendChild(tab);
+                    });
+                    subcategoryTabs.children[0].classList.add('active'); // Activate first subcategory by default
+                    filterProductsBySubcategory(subcats[0]);
+                } else {
+                    subcategoryTabsContainer.classList.add('hidden');
+                    renderProducts(products.filter(p => p.category === category));
+                }
+            };
+            
+            // Event Handlers
+            cartButton.addEventListener('click', () => {
+                cartSidebar.classList.add('open');
+            });
+
+            closeCartButton.addEventListener('click', () => {
+                cartSidebar.classList.remove('open');
+            });
+
+            productList.addEventListener('click', (e) => {
+                const button = e.target.closest('.add-to-cart-btn');
+                if (button) {
+                    const productId = parseInt(button.dataset.id);
+                    const product = findProductById(productId);
+
+                    const existingItem = cart.find(item => item.id === productId);
+
+                    if (product.byWeight) {
+                        const weight = parseFloat(prompt(`Ingresa el peso en kg (ej: 0.5 para 500gr) para ${product.name}:`));
+                        if (!isNaN(weight) && weight > 0) {
+                            if (existingItem) {
+                                existingItem.quantity += 1;
+                                existingItem.weight += weight;
+                            } else {
+                                cart.push({ id: productId, quantity: 1, weight: weight, byWeight: true });
+                            }
+                            showMessage(`${product.name} agregado al carrito.`);
+                        } else {
+                            showMessage('Peso inválido.', 'warning');
+                        }
+                    } else {
+                        if (existingItem) {
+                            existingItem.quantity += 1;
+                        } else {
+                            cart.push({ id: productId, quantity: 1, byWeight: false });
+                        }
+                        showMessage(`${product.name} agregado al carrito.`);
+                    }
+                    updateCart();
+                }
+            });
+
+            cartItemsContainer.addEventListener('click', (e) => {
+                const button = e.target.closest('.remove-from-cart-btn');
+                if (button) {
+                    const productId = parseInt(button.dataset.id);
+                    cart = cart.filter(item => item.id !== productId);
+                    updateCart();
+                    showMessage('Producto eliminado del carrito.');
+                }
+            });
+
+            checkoutButton.addEventListener('click', () => {
+                if (cart.length === 0) {
+                    showMessage('Tu carrito está vacío.', 'warning');
+                    return;
+                }
+                modal.style.display = 'flex';
+            });
+
+            closeModalButton.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+
+            modal.addEventListener('click', (e) => {
+                if (e.target.id === 'modal') {
+                    modal.style.display = 'none';
+                }
+            });
+
+            contactForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const name = document.getElementById('name').value;
+                const phone = document.getElementById('phone').value;
+                const address = document.getElementById('address').value;
+                const whatsappMessage = createWhatsAppMessage(name, phone, address);
+                const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+                window.open(whatsappUrl, '_blank');
+                modal.style.display = 'none';
+                contactForm.reset();
+                cart = [];
+                updateCart();
+                showMessage('¡Pedido enviado por WhatsApp!');
+            });
+
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                const filteredProducts = products.filter(product => product.name.toLowerCase().includes(query) || product.description.toLowerCase().includes(query));
+                renderProducts(filteredProducts);
+            });
+
+            categoryLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    categoryLinks.forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+                    const category = link.dataset.category;
+                    renderSubcategories(category);
+                });
+            });
+
+            subcategoryTabs.addEventListener('click', (e) => {
+                const tab = e.target.closest('.subcategory-tab');
+                if (tab) {
+                    subcategoryTabs.querySelectorAll('.subcategory-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    filterProductsBySubcategory(tab.dataset.subcat);
+                }
+            });
+
+            const filterProductsBySubcategory = (subcat) => {
+                const filtered = products.filter(p => p.subcategory === subcat);
+                renderProducts(filtered);
+            };
+
+            // WhatsApp message generator
+            function createWhatsAppMessage(name, phone, address) {
+                let message = `¡Hola! Me gustaría hacer un pedido desde Super Cerca.\n\n`;
+                message += `*Detalles del pedido:*\n`;
+                
+                cart.forEach(item => {
+                    const product = findProductById(item.id);
+                    if (item.byWeight) {
+                        const itemTotal = item.quantity * item.weight * product.price;
+                        message += `• ${product.name} (${product.description}) - ${formatWeight(item.weight)} x ${item.quantity} - ${formatPrice(itemTotal)}\n`;
+                    } else {
+                        const itemTotal = item.quantity * product.price;
+                        message += `• ${product.name} (${product.description}) x ${item.quantity} - ${formatPrice(itemTotal)}\n`;
+                    }
+                });
+                
+                const total = cart.reduce((sum, item) => {
+                    const product = findProductById(item.id);
+                    return sum + (item.byWeight ? item.quantity * item.weight * product.price : item.quantity * product.price);
+                }, 0);
+                
+                message += `\n*Total:* ${formatPrice(total)}\n\n`;
+                message += `*Mis datos:*\n`;
+                message += `Nombre: ${name}\n`;
+                message += `Teléfono: ${phone}\n`;
+                message += `Dirección: ${address}\n\n`;
+                message += `Por favor confirmar disponibilidad y tiempo de entrega. ¡Gracias!`;
+                
+                return message;
+            }
+
+            // Local storage
+            function saveCartToStorage() {
+                localStorage.setItem('cart', JSON.stringify(cart));
+            }
+            
+            function loadCartFromStorage() {
+                const savedCart = localStorage.getItem('cart');
+                if (savedCart) {
+                    cart = JSON.parse(savedCart);
+                }
+            }
+            
+            // Initialization
+            const init = () => {
+                loadCartFromStorage();
+                renderProducts(products); // Show all products initially
+                updateCart();
+            };
+
+            init();
+        });
+    </script>
+</body>
+</html>
+
